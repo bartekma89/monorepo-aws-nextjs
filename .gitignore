@@ -1,0 +1,21 @@
+# node
+**/node_modules
+**/dist
+**/cdk.out
+
+# Next.js
+**/.next
+**/.env.local
+**/.env.*.local
+
+# logi
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# systemowe
+.DS_Store
+Thumbs.db
+
+# inne
+.env

@@ -1,0 +1,15 @@
+{
+  "name": "aws-translateapp-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "infrastructure",
+    "packages/**"
+  ],
+  "scripts": {
+    "fe:dev": "npm run dev --workspace=@sff/frontend",
+    "cdk:deploy": "npm run cdk:deploy --workspace=@sff/infrastructure",
+    "cdk:synth": "npm run cdk:synth --workspace=@sff/infrastructure"
+  }
+}
