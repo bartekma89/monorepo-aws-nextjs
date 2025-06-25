@@ -8,15 +8,12 @@ import {
   ITranslateDbObject,
 } from "@sff/shared-types";
 
+import { gateway } from "/opt/nodejs/utils-lambda-layer";
+
 const translateClient = new clientTranslate.TranslateClient({});
 const dynamodbClient = new dynamodb.DynamoDBClient({});
 
 const { TRANSLATION_TABLE_NAME, TRANSLATION_PARTITION_KEY } = process.env;
-
-console.log("process env", {
-  TRANSLATION_TABLE_NAME,
-  TRANSLATION_PARTITION_KEY,
-});
 
 if (!TRANSLATION_PARTITION_KEY) {
   throw new Error("TRANSLATION_PARTITION_KEY is empty");
@@ -85,32 +82,9 @@ export const translate: lambda.APIGatewayProxyHandler = async function (
 
     await dynamodbClient.send(new dynamodb.PutItemCommand(tableInsetCmd));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(data),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Methods": "*",
-      },
-    };
-  } catch (e) {
-    let error;
-    if (e instanceof Error) {
-      error = e.message;
-    }
-
-    return {
-      statusCode: 500,
-      body: JSON.stringify(error),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true,
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Methods": "*",
-      },
-    };
+    return gateway.gatewaySuccessJsonResponse(data);
+  } catch (e: any) {
+    return gateway.gatewayErrorJsonResponse(e);
   }
 };
 
@@ -120,8 +94,6 @@ export const getTranslations: lambda.APIGatewayProxyHandler =
       const tableScanCmd: dynamodb.ScanCommandInput = {
         TableName: TRANSLATION_TABLE_NAME,
       };
-
-      console.log("scan table", tableScanCmd);
 
       const { Items } = await dynamodbClient.send(
         new dynamodb.ScanCommand(tableScanCmd)
@@ -133,31 +105,8 @@ export const getTranslations: lambda.APIGatewayProxyHandler =
 
       const data = Items.map((item) => unmarshall(item) as ITranslateDbObject);
 
-      return {
-        statusCode: 200,
-        body: JSON.stringify(data),
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Credentials": true,
-          "Access-Control-Allow-Headers": "*",
-          "Access-Control-Allow-Methods": "*",
-        },
-      };
-    } catch (e) {
-      let error;
-      if (e instanceof Error) {
-        error = e.message;
-      }
-
-      return {
-        statusCode: 500,
-        body: JSON.stringify(error),
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Credentials": true,
-          "Access-Control-Allow-Headers": "*",
-          "Access-Control-Allow-Methods": "*",
-        },
-      };
+      return gateway.gatewaySuccessJsonResponse(data);
+    } catch (e: any) {
+      return gateway.gatewayErrorJsonResponse(e);
     }
   };

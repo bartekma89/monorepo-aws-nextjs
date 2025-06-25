@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./nodejs/utils-lambda-layer",
+    "rootDir": "./src",
+    "types": ["node", "aws-lambda"]
+  },
+  "exclude": ["nodejs/utils-lambda-layer"]
+}

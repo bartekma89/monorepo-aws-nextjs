@@ -39,9 +39,24 @@ export class TempCdkStackStack extends cdk.Stack {
 
     const projectRoot = "../";
     const lambdasDirPath = path.join(projectRoot, "packages/lambdas");
+    const lambdaLayersDirPath = path.join(
+      projectRoot,
+      "packages/lambda-layers"
+    );
+
     const translateLambdaPath = path.resolve(
       path.join(lambdasDirPath, "translate/index.ts")
     );
+
+    const utilsLambdaLayerPath = path.resolve(
+      path.join(lambdaLayersDirPath, "utils-lambda-layer")
+    );
+
+    const utilsLambdaLayer = new lambda.LayerVersion(this, "utilsLambdaLayer", {
+      code: lambda.Code.fromAsset(utilsLambdaLayerPath),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_22_X],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
     // translate lambda
     const translateLambda = new lambdaNodeJs.NodejsFunction(
@@ -55,6 +70,7 @@ export class TempCdkStackStack extends cdk.Stack {
           forceDockerBundling: false,
         },
         initialPolicy: [translateServicePolicy, translateTablePolicy],
+        layers: [utilsLambdaLayer],
         environment: {
           TRANSLATION_TABLE_NAME: table.tableName,
           TRANSLATION_PARTITION_KEY: "requestId",
@@ -74,6 +90,7 @@ export class TempCdkStackStack extends cdk.Stack {
           forceDockerBundling: false,
         },
         initialPolicy: [translateTablePolicy],
+        layers: [utilsLambdaLayer],
         environment: {
           TRANSLATION_TABLE_NAME: table.tableName,
           TRANSLATION_PARTITION_KEY: "requestId",

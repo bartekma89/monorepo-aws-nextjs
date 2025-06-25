@@ -10,6 +10,7 @@
   "scripts": {
     "fe:dev": "npm run dev --workspace=@sff/frontend",
     "cdk:deploy": "npm run cdk:deploy --workspace=@sff/infrastructure",
-    "cdk:synth": "npm run cdk:synth --workspace=@sff/infrastructure"
+    "cdk:synth": "npm run cdk:synth --workspace=@sff/infrastructure",
+    "utils-lambda-layer:build": "npm run build --workspace=@sff/utils-lambda-layer"
   }
 }
