@@ -101,8 +101,6 @@ export class TempCdkStackStack extends cdk.Stack {
     // gateway
     const translateRestApi = new apigateway.RestApi(this, "translateRestApi");
 
-    translateRestApi.root.addResource("translate");
-
     translateRestApi.root.addMethod(
       "POST",
       new apigateway.LambdaIntegration(translateLambda)

@@ -1,6 +1,4 @@
 import * as lambda from "aws-lambda";
-import * as dynamodb from "@aws-sdk/client-dynamodb";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {
   ITranslateRequest,
   ITranslateResponse,
@@ -11,9 +9,8 @@ import {
   gateway,
   makeTranslation,
   exceptions,
+  TranslationTable,
 } from "/opt/nodejs/utils-lambda-layer";
-
-const dynamodbClient = new dynamodb.DynamoDBClient({});
 
 const { TRANSLATION_TABLE_NAME, TRANSLATION_PARTITION_KEY } = process.env;
 
@@ -28,6 +25,11 @@ if (!TRANSLATION_TABLE_NAME) {
     "TRANSLATION_TABLE_NAME is empty"
   );
 }
+
+const translationTable = new TranslationTable({
+  tableName: TRANSLATION_TABLE_NAME,
+  partitionKey: TRANSLATION_PARTITION_KEY,
+});
 
 export const translate: lambda.APIGatewayProxyHandler = async function (
   event: lambda.APIGatewayProxyEvent,
@@ -73,12 +75,7 @@ export const translate: lambda.APIGatewayProxyHandler = async function (
       requestId: context.awsRequestId,
     };
 
-    const tableInsetCmd: dynamodb.PutItemCommandInput = {
-      TableName: TRANSLATION_TABLE_NAME,
-      Item: marshall(tableObj),
-    };
-
-    await dynamodbClient.send(new dynamodb.PutItemCommand(tableInsetCmd));
+    await translationTable.insertTranslation(tableObj);
 
     return gateway.gatewaySuccessJsonResponse(data);
   } catch (e: any) {
@@ -89,19 +86,7 @@ export const translate: lambda.APIGatewayProxyHandler = async function (
 export const getTranslations: lambda.APIGatewayProxyHandler =
   async function () {
     try {
-      const tableScanCmd: dynamodb.ScanCommandInput = {
-        TableName: TRANSLATION_TABLE_NAME,
-      };
-
-      const { Items } = await dynamodbClient.send(
-        new dynamodb.ScanCommand(tableScanCmd)
-      );
-
-      if (!Items) {
-        throw new exceptions.MissingParameters("items");
-      }
-
-      const data = Items.map((item) => unmarshall(item) as ITranslateDbObject);
+      const data = await translationTable.getAllTranslations();
 
       return gateway.gatewaySuccessJsonResponse(data);
     } catch (e: any) {
