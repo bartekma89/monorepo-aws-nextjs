@@ -7,7 +7,7 @@ import {
   ITranslateDbObject,
 } from "@sff/shared-types";
 
-const URL = "https://uvf4gmcin8.execute-api.eu-central-1.amazonaws.com/prod/";
+const URL = process.env.NEXT_PUBLIC_GATEAWAY_URL as string;
 
 async function translateText(body: {
   inputLang: string;
