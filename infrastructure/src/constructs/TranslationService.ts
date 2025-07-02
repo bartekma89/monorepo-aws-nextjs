@@ -10,14 +10,19 @@ import { RestApiService } from "./RestApiService";
 interface ITranslationServiceProps extends cdk.StackProps {
   lambdasDirPath: string;
   lambdaLayersDirPath: string;
+  restApi: RestApiService;
 }
 
 export class TranslationService extends Construct {
-  constructor(scope: Construct, id: string, props: ITranslationServiceProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    { lambdaLayersDirPath, lambdasDirPath, restApi }: ITranslationServiceProps
+  ) {
     super(scope, id);
 
     const translateLambdaPath = path.resolve(
-      path.join(props.lambdasDirPath, "translate/index.ts")
+      path.join(lambdasDirPath, "translate/index.ts")
     );
 
     // dynamodb
@@ -47,7 +52,7 @@ export class TranslationService extends Construct {
     });
 
     const utilsLambdaLayer = new lambda.LayerVersion(this, "utilsLambdaLayer", {
-      code: lambda.Code.fromAsset(props.lambdaLayersDirPath),
+      code: lambda.Code.fromAsset(lambdaLayersDirPath),
       compatibleRuntimes: [lambda.Runtime.NODEJS_22_X],
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -92,16 +97,12 @@ export class TranslationService extends Construct {
       }
     );
 
-    const translateService = new RestApiService(this, "TranslateService", {
-      restApiName: "TranslateRestApi",
-    });
-
-    translateService.addTranlateMethod({
+    restApi.addTranlateMethod({
       httpMethod: "POST",
       lambda: translateLambda,
     });
 
-    translateService.addTranlateMethod({
+    restApi.addTranlateMethod({
       httpMethod: "GET",
       lambda: getTranslationsLambda,
     });
