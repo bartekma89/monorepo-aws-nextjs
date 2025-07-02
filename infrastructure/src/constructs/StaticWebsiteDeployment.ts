@@ -5,16 +5,16 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as cdk from "aws-cdk-lib";
+import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import { frontendDirPath } from "../helpers";
 
-interface IStaticWebsiteDeploymentProps extends cdk.StackProps {
-  projectRoot: string;
-}
+interface IStaticWebsiteDeploymentProps extends cdk.StackProps {}
 
 export class StaticWebsiteDeployment extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    { projectRoot }: IStaticWebsiteDeploymentProps
+    props?: IStaticWebsiteDeploymentProps
   ) {
     super(scope, id);
 
@@ -41,47 +41,35 @@ export class StaticWebsiteDeployment extends Construct {
       })
     );
 
-    const distribution = new cloudfront.CloudFrontWebDistribution(
+    const distribution = new cloudfront.Distribution(
       this,
       "WebsiteDistribution",
       {
-        originConfigs: [
-          {
-            s3OriginSource: {
-              s3BucketSource: websiteBucket,
-              originAccessIdentity: oai,
-            },
-            behaviors: [
-              {
-                isDefaultBehavior: true,
-                compress: true,
-                allowedMethods:
-                  cloudfront.CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
-              },
-            ],
-          },
-        ],
-        errorConfigurations: [
-          {
-            errorCode: 404,
-            responsePagePath: "/404.html",
-            responseCode: 404,
-          },
-          {
-            errorCode: 403,
-            responsePagePath: "/404.html",
-            responseCode: 403,
-          },
-        ],
         defaultRootObject: "index.html",
-        comment: "Website bucket distribution",
+        defaultBehavior: {
+          origin: new origins.S3Origin(websiteBucket, {
+            originAccessIdentity: oai,
+          }),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
+        errorResponses: [
+          {
+            httpStatus: 404,
+            responseHttpStatus: 404,
+            responsePagePath: "/404.html",
+          },
+          {
+            httpStatus: 403,
+            responseHttpStatus: 403,
+            responsePagePath: "/404.html",
+          },
+        ],
       }
     );
 
     new s3deploy.BucketDeployment(this, "WebsiteDeployment", {
-      sources: [
-        s3deploy.Source.asset(path.join(projectRoot, "apps/frontend/dist")),
-      ],
+      sources: [s3deploy.Source.asset(frontendDirPath)],
       destinationBucket: websiteBucket,
       distribution,
       distributionPaths: ["/*"],
@@ -89,7 +77,7 @@ export class StaticWebsiteDeployment extends Construct {
 
     new cdk.CfnOutput(this, "websiteUrl", {
       exportName: "websiteUrl",
-      value: `https://${distribution.distributionDomainName}`,
+      value: `https://${distribution.domainName}`,
     });
   }
 }
