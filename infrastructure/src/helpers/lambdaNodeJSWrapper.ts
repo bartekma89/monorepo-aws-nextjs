@@ -17,7 +17,6 @@ interface ILambdaWrapperProps {
 const buildingProps: lambdaNodeJs.BundlingOptions = {
   forceDockerBundling: false,
   minify: true,
-  externalModules: ["/opt/nodejs/utils-lambda-layer"],
 };
 
 export const createNodeJsLambda = (
