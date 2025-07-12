@@ -72,6 +72,7 @@ export class StaticWebsiteDeployment extends Construct {
       destinationBucket: websiteBucket,
       distribution,
       distributionPaths: ["/*"],
+      memoryLimit: 512,
     });
 
     new cdk.CfnOutput(this, "websiteUrl", {
