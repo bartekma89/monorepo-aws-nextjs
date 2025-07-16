@@ -14,7 +14,9 @@ export class TranslatorServiceStack extends cdk.Stack {
 
     const userAuthService = new UserAuthService(this, "userAuthService");
 
-    const translateService = new RestApiService(this, "translateService");
+    const translateService = new RestApiService(this, "translateService", {
+      userPool: userAuthService.userPool,
+    });
 
     new TranslationService(this, "translationService", {
       restApi: translateService,

@@ -7,6 +7,8 @@ import {
   ITranslateDbObject,
 } from "@sff/shared-types";
 
+import { fetchAuthSession } from "aws-amplify/auth";
+
 const URL = process.env.NEXT_PUBLIC_GATEAWAY_URL as string;
 
 async function translateText(body: {
@@ -21,9 +23,14 @@ async function translateText(body: {
       sourceText: body.inputText,
     };
 
+    const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
+
     const result = await fetch(URL, {
       method: "POST",
       body: JSON.stringify(requestBody),
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
     });
 
     const data = (await result.json()) as ITranslateResponse;
@@ -38,8 +45,13 @@ async function translateText(body: {
 
 async function getTranslations() {
   try {
+    const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
+
     const result = await fetch(URL, {
       method: "GET",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
     });
 
     const data = (await result.json()) as ITranslateDbObject[];

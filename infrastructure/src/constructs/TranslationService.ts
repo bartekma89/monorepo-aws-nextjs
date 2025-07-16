@@ -2,11 +2,9 @@ import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
 import * as dynamoDb from "aws-cdk-lib/aws-dynamodb";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as lambdaNodeJs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import path from "path";
 import { RestApiService } from "./RestApiService";
-import { lambdasDirPath, lambdaLayersDirPath } from "../helpers";
+import { lambdaLayersDirPath } from "../helpers";
 import { createNodeJsLambda } from "../helpers/lambdaNodeJSWrapper";
 
 interface ITranslationServiceProps extends cdk.StackProps {
@@ -23,7 +21,11 @@ export class TranslationService extends Construct {
 
     // dynamodb
     const table = new dynamoDb.Table(this, "TranslationsTable", {
-      partitionKey: { name: "requestId", type: dynamoDb.AttributeType.STRING },
+      partitionKey: { name: "username", type: dynamoDb.AttributeType.STRING },
+      sortKey: {
+        name: "requestId",
+        type: dynamoDb.AttributeType.STRING,
+      },
       tableName: "translation",
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -43,6 +45,7 @@ export class TranslationService extends Construct {
         "dynamodb:Scan",
         "dynamodb:GetItem",
         "dynamodb:DeleteItem",
+        "dynamodb:Query",
       ],
       resources: ["*"],
     });
@@ -53,16 +56,19 @@ export class TranslationService extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    const environment = {
+      TRANSLATION_TABLE_NAME: table.tableName,
+      TRANSLATION_PARTITION_KEY: "username",
+      TRANSLATION_SORT_KEY: "requestId",
+    };
+
     // translate lambda
     const translateLambda = createNodeJsLambda(this, "translateLambda", {
       lambdaRelPath: "translate/index.ts",
-      handler: "translate",
+      handler: "userTranslate",
       initialPolicy: [translateServicePolicy, translateTablePolicy],
       lambdaLayers: [utilsLambdaLayer],
-      environment: {
-        TRANSLATION_TABLE_NAME: table.tableName,
-        TRANSLATION_PARTITION_KEY: "requestId",
-      },
+      environment,
     });
 
     // getTranslations lambda
@@ -71,24 +77,23 @@ export class TranslationService extends Construct {
       "getTranslationsLambda",
       {
         lambdaRelPath: "translate/index.ts",
-        handler: "getTranslations",
+        handler: "getUserTranslations",
         initialPolicy: [translateTablePolicy],
         lambdaLayers: [utilsLambdaLayer],
-        environment: {
-          TRANSLATION_TABLE_NAME: table.tableName,
-          TRANSLATION_PARTITION_KEY: "requestId",
-        },
+        environment,
       }
     );
 
     restApi.addTranlateMethod({
       httpMethod: "POST",
       lambda: translateLambda,
+      isAuth: true,
     });
 
     restApi.addTranlateMethod({
       httpMethod: "GET",
       lambda: getTranslationsLambda,
+      isAuth: true,
     });
   }
 }

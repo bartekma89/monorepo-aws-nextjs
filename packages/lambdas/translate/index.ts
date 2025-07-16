@@ -12,12 +12,20 @@ import {
   TranslationTable,
 } from "/opt/nodejs/utils-lambda-layer";
 
-const { TRANSLATION_TABLE_NAME, TRANSLATION_PARTITION_KEY } = process.env;
+const {
+  TRANSLATION_TABLE_NAME,
+  TRANSLATION_PARTITION_KEY,
+  TRANSLATION_SORT_KEY,
+} = process.env;
 
 if (!TRANSLATION_PARTITION_KEY) {
   throw new exceptions.MissingEnvVariableError(
     "TRANSLATION_PARTITION_KEY is empty"
   );
+}
+
+if (!TRANSLATION_SORT_KEY) {
+  throw new exceptions.MissingEnvVariableError("TRANSLATION_SORT_KEY is empty");
 }
 
 if (!TRANSLATION_TABLE_NAME) {
@@ -29,13 +37,29 @@ if (!TRANSLATION_TABLE_NAME) {
 const translationTable = new TranslationTable({
   tableName: TRANSLATION_TABLE_NAME,
   partitionKey: TRANSLATION_PARTITION_KEY,
+  sortKey: TRANSLATION_SORT_KEY,
 });
 
-export const translate: lambda.APIGatewayProxyHandler = async function (
+const getUsername = (event: lambda.APIGatewayProxyEvent) => {
+  const claims = event.requestContext.authorizer?.claims;
+  if (!claims) {
+    throw new Error("user not authorized");
+  }
+
+  return claims["cognito:username"];
+};
+
+export const userTranslate: lambda.APIGatewayProxyHandler = async function (
   event: lambda.APIGatewayProxyEvent,
   context: lambda.Context
 ) {
   try {
+    const username = getUsername(event);
+
+    if (!username) {
+      throw new Error("username does not exist");
+    }
+
     if (!event.body) {
       throw new exceptions.MissingBodyError();
     }
@@ -72,6 +96,7 @@ export const translate: lambda.APIGatewayProxyHandler = async function (
     const tableObj: ITranslateDbObject = {
       ...body,
       ...data,
+      username,
       requestId: context.awsRequestId,
     };
 
@@ -83,10 +108,12 @@ export const translate: lambda.APIGatewayProxyHandler = async function (
   }
 };
 
-export const getTranslations: lambda.APIGatewayProxyHandler =
-  async function () {
+export const getUserTranslations: lambda.APIGatewayProxyHandler =
+  async function (event: lambda.APIGatewayProxyEvent) {
     try {
-      const data = await translationTable.getAllTranslations();
+      const username = getUsername(event);
+
+      const data = await translationTable.queryTranslation({ username });
 
       return gateway.gatewaySuccessJsonResponse(data);
     } catch (e: any) {

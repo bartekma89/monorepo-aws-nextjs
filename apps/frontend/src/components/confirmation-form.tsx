@@ -23,8 +23,6 @@ export function ConfirmationForm({ onStepChange }: IConfirmationFormProps) {
             confirmationCode: verificationCode,
           });
 
-          console.log("Confirmation successful:", data);
-
           onStepChange(data.nextStep);
         } catch (error) {
           console.error("Error confirming sign up:", error);

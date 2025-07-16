@@ -13,8 +13,6 @@ export function AutoSignIn({ onStepChange }: IAutoSignInProps) {
     const asyncSignIn = async () => {
       const { nextStep } = await autoSignIn();
 
-      console.log(nextStep);
-
       onStepChange(nextStep);
     };
     asyncSignIn();

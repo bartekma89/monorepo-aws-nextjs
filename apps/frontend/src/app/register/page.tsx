@@ -19,8 +19,6 @@ export default function RegisterPage() {
       return;
     }
 
-    console.log("step", step);
-
     if ((step as TSignInState).signInStep === "DONE") {
       router.push("/");
     }

@@ -14,7 +14,7 @@
     "cdk:destroy": "npm run cdk:destroy --workspace=@sff/infrastructure",
     "cdk:synth": "npm run cdk:synth --workspace=@sff/infrastructure",
     "lambda-layer:build": "npm run build --workspace=@sff/utils-lambda-layer",
-    "labmda-layer:watch": "npm run watch --workspace=@sff/utils-lambda-layer",
+    "lambda-layer:watch": "npm run watch --workspace=@sff/utils-lambda-layer",
     "deploy": "npm run fe:build && npm run cdk:deploy"
   }
 }

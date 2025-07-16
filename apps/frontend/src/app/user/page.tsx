@@ -11,8 +11,6 @@ export default function UserPage() {
     try {
       const currUser = await getCurrentUser();
 
-      console.log(currUser);
-
       setUser(currUser);
     } catch {
       setUser(null);

@@ -36,11 +36,9 @@ export function RegisterForm({ onStepChange }: IRegisterFormProps) {
             },
           });
 
-          console.log(nextStep);
-
           onStepChange(nextStep);
         } catch (error) {
-          console.log("Error signing up:", error);
+          console.error("Error signing up:", error);
         }
       }}>
       <div className="flex flex-col">
