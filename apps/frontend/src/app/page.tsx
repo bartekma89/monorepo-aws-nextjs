@@ -7,11 +7,38 @@ import {
   ITranslateDbObject,
 } from "@sff/shared-types";
 
-import { fetchAuthSession } from "aws-amplify/auth";
+import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 
 const URL = process.env.NEXT_PUBLIC_GATEAWAY_URL as string;
 
-async function translateText(body: {
+async function translatePublicText(body: {
+  inputLang: string;
+  outputLang: string;
+  inputText: string;
+}) {
+  try {
+    const requestBody: ITranslateRequest = {
+      sourceLang: body.inputLang,
+      targetLang: body.outputLang,
+      sourceText: body.inputText,
+    };
+
+    const result = await fetch(`${URL}/public`, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+
+    const data = (await result.json()) as ITranslateResponse;
+
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.toString());
+    }
+  }
+}
+
+async function translateUserText(body: {
   inputLang: string;
   outputLang: string;
   inputText: string;
@@ -25,7 +52,7 @@ async function translateText(body: {
 
     const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
 
-    const result = await fetch(URL, {
+    const result = await fetch(`${URL}/user`, {
       method: "POST",
       body: JSON.stringify(requestBody),
       headers: {
@@ -43,11 +70,11 @@ async function translateText(body: {
   }
 }
 
-async function getTranslations() {
+async function getUserTranslations() {
   try {
     const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
 
-    const result = await fetch(URL, {
+    const result = await fetch(`${URL}/user`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${authToken}`,
@@ -77,11 +104,28 @@ export default function Home() {
         onSubmit={async (e) => {
           e.preventDefault();
 
-          const result = await translateText({
-            inputLang,
-            inputText,
-            outputLang,
-          });
+          let result;
+          try {
+            const user = await getCurrentUser();
+
+            console.log(user);
+
+            if (user) {
+              result = await translateUserText({
+                inputLang,
+                inputText,
+                outputLang,
+              });
+            } else {
+              throw new Error("user is not logged in");
+            }
+          } catch {
+            result = await translatePublicText({
+              inputLang,
+              inputText,
+              outputLang,
+            });
+          }
 
           if (result) {
             setOutputText(result);
@@ -127,7 +171,7 @@ export default function Home() {
         className="btn bg-blue-200 p-2 mt-2 rounded-xl"
         type="button"
         onClick={async () => {
-          const data = await getTranslations();
+          const data = await getUserTranslations();
           if (data) {
             setTranslations(data);
           }

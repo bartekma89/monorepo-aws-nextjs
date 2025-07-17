@@ -62,7 +62,7 @@ export class TranslationService extends Construct {
       TRANSLATION_SORT_KEY: "requestId",
     };
 
-    // translate lambda
+    // translate user lambda
     const translateLambda = createNodeJsLambda(this, "translateLambda", {
       lambdaRelPath: "translate/index.ts",
       handler: "userTranslate",
@@ -71,7 +71,15 @@ export class TranslationService extends Construct {
       environment,
     });
 
-    // getTranslations lambda
+    // user rest api
+    restApi.addTranlateMethod({
+      resource: restApi.userResource,
+      httpMethod: "POST",
+      lambda: translateLambda,
+      isAuth: true,
+    });
+
+    // getTranslations user lambda
     const getTranslationsLambda = createNodeJsLambda(
       this,
       "getTranslationsLambda",
@@ -85,15 +93,31 @@ export class TranslationService extends Construct {
     );
 
     restApi.addTranlateMethod({
-      httpMethod: "POST",
-      lambda: translateLambda,
-      isAuth: true,
-    });
-
-    restApi.addTranlateMethod({
+      resource: restApi.userResource,
       httpMethod: "GET",
       lambda: getTranslationsLambda,
       isAuth: true,
+    });
+
+    // translate public lambda
+    const publicTranslateLambda = createNodeJsLambda(
+      this,
+      "publicTranslateLambda",
+      {
+        lambdaRelPath: "translate/index.ts",
+        handler: "publicTranslate",
+        initialPolicy: [translateServicePolicy],
+        lambdaLayers: [utilsLambdaLayer],
+        environment,
+      }
+    );
+
+    // publuc rest api
+    restApi.addTranlateMethod({
+      resource: restApi.publicResource,
+      httpMethod: "POST",
+      lambda: publicTranslateLambda,
+      isAuth: false,
     });
   }
 }
