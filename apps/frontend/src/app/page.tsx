@@ -91,15 +91,38 @@ async function getUserTranslations() {
   }
 }
 
+async function deleteUserTranslation(item: {
+  requestId: string;
+  username: string;
+}) {
+  try {
+    const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
+
+    const result = await fetch(`${URL}/user`, {
+      method: "DELETE",
+      body: JSON.stringify(item),
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    return (await result.json()) as ITranslateDbObject[];
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.toString());
+    }
+  }
+}
+
 export default function Home() {
   const [inputText, setInputText] = useState<string>("");
   const [inputLang, setInputLang] = useState<string>("");
   const [outputLang, setOutputLang] = useState<string>("");
   const [outputText, setOutputText] = useState<ITranslateResponse | null>(null);
-  const [translations, setTranslations] = useState<ITranslateDbObject[]>([]);
+  const [translations, setTranslations] = useState<ITranslateDbObject[]>();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-around p-24">
+    <main className="flex min-h-screen flex-col items-center justify-center-safe p-24">
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -161,7 +184,7 @@ export default function Home() {
             onChange={(e) => setOutputLang(e.target.value)}
           />
         </div>
-        <button className="btn bg-blue-200 p-2 mt-2 rounded-xl" type="submit">
+        <button className="btn bg-blue-200 p-2 mt-3 rounded-xl" type="submit">
           Translate
         </button>
       </form>
@@ -178,7 +201,35 @@ export default function Home() {
         }}>
         Get Translations
       </button>
-      <pre>{JSON.stringify(translations, null, 2)}</pre>
+      <div className="flex flex-col w-full mt-3 space-y-2">
+        {translations?.map((item) => (
+          <div
+            key={item.requestId}
+            className="flex flex-row space-x-2 justify-between bg-slate-400">
+            <p className="mr-6">
+              {item.sourceLang}/{item.sourceText}
+            </p>
+            |
+            <p className="ml-6">
+              {item.targetLang}/{item.targetText}
+            </p>
+            <button
+              className="btn p-2 bg-red-500 hover:bg-red-300 cursor-pointer rounded-md"
+              type="button"
+              onClick={async () => {
+                const data = await deleteUserTranslation({
+                  requestId: item.requestId,
+                  username: item.username,
+                });
+                if (data) {
+                  setTranslations(data);
+                }
+              }}>
+              X
+            </button>
+          </div>
+        ))}
+      </div>
     </main>
   );
 }

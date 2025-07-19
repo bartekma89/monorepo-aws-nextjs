@@ -14,17 +14,18 @@ export function RegisterForm({ onStepChange }: IRegisterFormProps) {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [password2, setPassword2] = useState<string>("");
+  const [error, setError] = useState<string>();
 
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
 
-        if (password !== password2) {
-          throw new Error("Passwords do not match");
-        }
-
         try {
+          if (password !== password2) {
+            throw new Error("Passwords do not match");
+          }
+
           const { nextStep } = await signUp({
             username: email,
             password,
@@ -37,8 +38,14 @@ export function RegisterForm({ onStepChange }: IRegisterFormProps) {
           });
 
           onStepChange(nextStep);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Error signing up:", error);
+
+          if (error instanceof Error) {
+            setError(error.message);
+          } else {
+            setError(String(error));
+          }
         }
       }}>
       <div className="flex flex-col">
@@ -80,6 +87,7 @@ export function RegisterForm({ onStepChange }: IRegisterFormProps) {
         </button>
         <Link href="/user">Login</Link>
       </div>
+      {error && <p className="text-red-500 font-bold">{error}</p>}
     </form>
   );
 }

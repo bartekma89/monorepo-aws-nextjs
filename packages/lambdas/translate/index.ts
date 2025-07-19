@@ -161,3 +161,35 @@ export const publicTranslate: lambda.APIGatewayProxyHandler = async function (
     return gateway.gatewayErrorJsonResponse(e);
   }
 };
+
+export const deleteUserTranslation: lambda.APIGatewayProxyHandler =
+  async function (event: lambda.APIGatewayProxyEvent, context: lambda.Context) {
+    try {
+      const username = getUsername(event);
+
+      if (!username) {
+        throw new Error("username does not exist");
+      }
+
+      if (!event.body) {
+        throw new exceptions.MissingBodyError();
+      }
+
+      let body = JSON.parse(event.body) as { requestId: string };
+
+      if (!body.requestId) {
+        throw new exceptions.MissingParameters("requestId");
+      }
+
+      let requestId = body.requestId;
+
+      const data = await translationTable.deleteTranslation({
+        username,
+        requestId,
+      });
+
+      return gateway.gatewaySuccessJsonResponse(data);
+    } catch (e: any) {
+      return gateway.gatewayErrorJsonResponse(e);
+    }
+  };

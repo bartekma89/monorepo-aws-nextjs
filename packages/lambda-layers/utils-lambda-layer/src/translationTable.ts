@@ -70,4 +70,26 @@ export class TranslationTable {
 
     return Items.map((item) => unmarshall(item) as ITranslateDbObject);
   }
+
+  async deleteTranslation({
+    requestId,
+    username,
+  }: {
+    requestId: string;
+    username: string;
+  }) {
+    const tabledeleteCmd: dynamodb.DeleteItemCommandInput = {
+      TableName: this.tableName,
+      Key: {
+        [this.partitionKey]: { S: username },
+        [this.sortKey]: { S: requestId },
+      },
+    };
+
+    await this.dynamodbClient.send(
+      new dynamodb.DeleteItemCommand(tabledeleteCmd)
+    );
+
+    return this.queryTranslation({ username });
+  }
 }

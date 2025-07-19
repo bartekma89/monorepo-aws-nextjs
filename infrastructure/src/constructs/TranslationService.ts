@@ -63,7 +63,7 @@ export class TranslationService extends Construct {
     };
 
     // translate user lambda
-    const translateLambda = createNodeJsLambda(this, "translateLambda", {
+    const userTranslateLambda = createNodeJsLambda(this, "translateLambda", {
       lambdaRelPath: "translate/index.ts",
       handler: "userTranslate",
       initialPolicy: [translateServicePolicy, translateTablePolicy],
@@ -75,7 +75,7 @@ export class TranslationService extends Construct {
     restApi.addTranlateMethod({
       resource: restApi.userResource,
       httpMethod: "POST",
-      lambda: translateLambda,
+      lambda: userTranslateLambda,
       isAuth: true,
     });
 
@@ -118,6 +118,26 @@ export class TranslationService extends Construct {
       httpMethod: "POST",
       lambda: publicTranslateLambda,
       isAuth: false,
+    });
+
+    // delete translation lambda
+    const userDeleteTranslationLambda = createNodeJsLambda(
+      this,
+      "userDeleteTranslationLambda",
+      {
+        lambdaRelPath: "translate/index.ts",
+        handler: "deleteUserTranslation",
+        initialPolicy: [translateTablePolicy],
+        lambdaLayers: [utilsLambdaLayer],
+        environment,
+      }
+    );
+
+    restApi.addTranlateMethod({
+      resource: restApi.userResource,
+      httpMethod: "DELETE",
+      lambda: userDeleteTranslationLambda,
+      isAuth: true,
     });
   }
 }

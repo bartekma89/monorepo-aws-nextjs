@@ -11,23 +11,32 @@ interface ILoginFormProps {
 export function LoginForm({ onSignIn }: ILoginFormProps) {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>();
 
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault();
 
-        await signIn({
-          username: email,
-          password,
-          options: {
-            clientMetadata: {
-              email,
+        try {
+          await signIn({
+            username: email,
+            password,
+            options: {
+              clientMetadata: {
+                email,
+              },
             },
-          },
-        });
+          });
 
-        onSignIn();
+          onSignIn();
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            setError(error.message);
+          } else {
+            setError(String(error));
+          }
+        }
       }}>
       <div className="flex flex-col">
         <label htmlFor="email">Email</label>
@@ -57,6 +66,7 @@ export function LoginForm({ onSignIn }: ILoginFormProps) {
         </button>
         <Link href="/register">Register</Link>
       </div>
+      {error && <p className="text-red-500 font-bold">{error}</p>}
     </form>
   );
 }
