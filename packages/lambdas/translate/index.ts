@@ -2,7 +2,7 @@ import * as lambda from "aws-lambda";
 import {
   ITranslateRequest,
   ITranslateResponse,
-  ITranslateDbObject,
+  ITranslateResult,
 } from "@sff/shared-types";
 
 import {
@@ -49,9 +49,38 @@ const getUsername = (event: lambda.APIGatewayProxyEvent) => {
   return claims["cognito:username"];
 };
 
+const parseTranslateRequest = (requestStr: string) => {
+  const request = JSON.parse(requestStr) as ITranslateRequest;
+
+  if (!request.sourceLang) {
+    throw new exceptions.MissingParameters("sourceLang");
+  }
+
+  if (!request.targetLang) {
+    throw new exceptions.MissingParameters("targetLang");
+  }
+
+  if (!request.sourceText) {
+    throw new exceptions.MissingParameters("sourceText");
+  }
+
+  return request;
+};
+
+const parseDeleteRequest = (requestStr: string) => {
+  let request = JSON.parse(requestStr) as { requestId: string };
+
+  if (!request.requestId) {
+    throw new exceptions.MissingParameters("requestId");
+  }
+  return request;
+};
+
+const getCurrentTime = () => Date.now();
+const formatTime = (time: number) => new Date(time).toString();
+
 export const userTranslate: lambda.APIGatewayProxyHandler = async function (
-  event: lambda.APIGatewayProxyEvent,
-  context: lambda.Context
+  event: lambda.APIGatewayProxyEvent
 ) {
   try {
     const username = getUsername(event);
@@ -64,45 +93,29 @@ export const userTranslate: lambda.APIGatewayProxyHandler = async function (
       throw new exceptions.MissingBodyError();
     }
 
-    const body = JSON.parse(event.body) as ITranslateRequest;
+    const request = parseTranslateRequest(event.body);
 
-    if (!body.sourceLang) {
-      throw new exceptions.MissingParameters("sourceLang");
-    }
+    const nowEpoch = getCurrentTime();
 
-    if (!body.targetLang) {
-      throw new exceptions.MissingParameters("targetLang");
-    }
+    const targetText = await makeTranslation(request);
 
-    if (!body.sourceText) {
-      throw new exceptions.MissingParameters("sourceText");
-    }
-
-    const now = new Date(Date.now()).toString();
-
-    const result = await makeTranslation(body);
-
-    if (!result.TranslatedText) {
-      throw new exceptions.MissingParameters("translation");
-    }
-
-    const data: ITranslateResponse = {
-      timestamp: now,
-      targetText: result.TranslatedText,
+    const response: ITranslateResponse = {
+      timestamp: formatTime(nowEpoch),
+      targetText,
     };
 
     // save the translation into our translation table
     // the table object that is saved to the database
-    const tableObj: ITranslateDbObject = {
-      ...body,
-      ...data,
-      username,
-      requestId: context.awsRequestId,
+    const result: ITranslateResult = {
+      ...request,
+      ...response,
+      username: "",
+      requestId: nowEpoch.toString(),
     };
 
-    await translationTable.insertTranslation(tableObj);
+    await translationTable.insertTranslation(result);
 
-    return gateway.gatewaySuccessJsonResponse(data);
+    return gateway.gatewaySuccessJsonResponse(response);
   } catch (e: any) {
     return gateway.gatewayErrorJsonResponse(e);
   }
@@ -113,7 +126,10 @@ export const getUserTranslations: lambda.APIGatewayProxyHandler =
     try {
       const username = getUsername(event);
 
-      const data = await translationTable.queryTranslation({ username });
+      const data = await translationTable.queryTranslation({
+        username,
+        requestId: "",
+      });
 
       return gateway.gatewaySuccessJsonResponse(data);
     } catch (e: any) {
@@ -129,34 +145,18 @@ export const publicTranslate: lambda.APIGatewayProxyHandler = async function (
       throw new exceptions.MissingBodyError();
     }
 
-    const body = JSON.parse(event.body) as ITranslateRequest;
+    const request = parseTranslateRequest(event.body);
 
-    if (!body.sourceLang) {
-      throw new exceptions.MissingParameters("sourceLang");
-    }
+    const nowEpoch = getCurrentTime();
 
-    if (!body.targetLang) {
-      throw new exceptions.MissingParameters("targetLang");
-    }
+    const targetText = await makeTranslation(request);
 
-    if (!body.sourceText) {
-      throw new exceptions.MissingParameters("sourceText");
-    }
-
-    const now = new Date(Date.now()).toString();
-
-    const result = await makeTranslation(body);
-
-    if (!result.TranslatedText) {
-      throw new exceptions.MissingParameters("translation");
-    }
-
-    const data: ITranslateResponse = {
-      timestamp: now,
-      targetText: result.TranslatedText,
+    const response: ITranslateResponse = {
+      timestamp: formatTime(nowEpoch),
+      targetText,
     };
 
-    return gateway.gatewaySuccessJsonResponse(data);
+    return gateway.gatewaySuccessJsonResponse(response);
   } catch (e: any) {
     return gateway.gatewayErrorJsonResponse(e);
   }
@@ -175,13 +175,7 @@ export const deleteUserTranslation: lambda.APIGatewayProxyHandler =
         throw new exceptions.MissingBodyError();
       }
 
-      let body = JSON.parse(event.body) as { requestId: string };
-
-      if (!body.requestId) {
-        throw new exceptions.MissingParameters("requestId");
-      }
-
-      let requestId = body.requestId;
+      const { requestId } = parseDeleteRequest(event.body);
 
       const data = await translationTable.deleteTranslation({
         username,

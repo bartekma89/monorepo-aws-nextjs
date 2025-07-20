@@ -1,6 +1,6 @@
 import * as dynamodb from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { ITranslateDbObject } from "@sff/shared-types";
+import { ITranslatePrimaryKey, ITranslateResult } from "@sff/shared-types";
 import { exceptions } from ".";
 
 export class TranslationTable {
@@ -24,7 +24,7 @@ export class TranslationTable {
     this.sortKey = sortKey;
   }
 
-  async insertTranslation(data: ITranslateDbObject) {
+  async insertTranslation(data: ITranslateResult) {
     const tableInsetCmd: dynamodb.PutItemCommandInput = {
       TableName: this.tableName,
       Item: marshall(data),
@@ -33,7 +33,7 @@ export class TranslationTable {
     await this.dynamodbClient.send(new dynamodb.PutItemCommand(tableInsetCmd));
   }
 
-  async queryTranslation({ username }: { username: string }) {
+  async queryTranslation({ username }: ITranslatePrimaryKey) {
     const queryCmd: dynamodb.QueryCommandInput = {
       TableName: this.tableName,
       KeyConditionExpression: "#pk = :username",
@@ -54,7 +54,7 @@ export class TranslationTable {
       return [];
     }
 
-    return Items.map((item) => unmarshall(item) as ITranslateDbObject);
+    return Items.map((item) => unmarshall(item) as ITranslateResult);
   }
 
   async getAllTranslations() {
@@ -68,21 +68,15 @@ export class TranslationTable {
       throw new exceptions.MissingParameters("Items");
     }
 
-    return Items.map((item) => unmarshall(item) as ITranslateDbObject);
+    return Items.map((item) => unmarshall(item) as ITranslateResult);
   }
 
-  async deleteTranslation({
-    requestId,
-    username,
-  }: {
-    requestId: string;
-    username: string;
-  }) {
+  async deleteTranslation(item: ITranslatePrimaryKey) {
     const tabledeleteCmd: dynamodb.DeleteItemCommandInput = {
       TableName: this.tableName,
       Key: {
-        [this.partitionKey]: { S: username },
-        [this.sortKey]: { S: requestId },
+        [this.partitionKey]: { S: item.username },
+        [this.sortKey]: { S: item.requestId },
       },
     };
 
@@ -90,6 +84,6 @@ export class TranslationTable {
       new dynamodb.DeleteItemCommand(tabledeleteCmd)
     );
 
-    return this.queryTranslation({ username });
+    return item;
   }
 }

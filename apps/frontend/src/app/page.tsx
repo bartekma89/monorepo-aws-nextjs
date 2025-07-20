@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   ITranslateRequest,
   ITranslateResponse,
-  ITranslateDbObject,
+  ITranslateResult,
 } from "@sff/shared-types";
 
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
@@ -81,7 +81,7 @@ async function getUserTranslations() {
       },
     });
 
-    const data = (await result.json()) as ITranslateDbObject[];
+    const data = (await result.json()) as ITranslateResult[];
 
     return data;
   } catch (error) {
@@ -106,7 +106,7 @@ async function deleteUserTranslation(item: {
       },
     });
 
-    return (await result.json()) as ITranslateDbObject[];
+    return (await result.json()) as ITranslateResult[];
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(error.toString());
@@ -119,7 +119,7 @@ export default function Home() {
   const [inputLang, setInputLang] = useState<string>("");
   const [outputLang, setOutputLang] = useState<string>("");
   const [outputText, setOutputText] = useState<ITranslateResponse | null>(null);
-  const [translations, setTranslations] = useState<ITranslateDbObject[]>();
+  const [translations, setTranslations] = useState<ITranslateResult[]>();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center-safe p-24">
