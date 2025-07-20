@@ -1,125 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ITranslateRequest,
-  ITranslateResponse,
-  ITranslateResult,
-} from "@sff/shared-types";
 
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
-
-const URL = process.env.NEXT_PUBLIC_GATEAWAY_URL as string;
-
-async function translatePublicText(body: {
-  inputLang: string;
-  outputLang: string;
-  inputText: string;
-}) {
-  try {
-    const requestBody: ITranslateRequest = {
-      sourceLang: body.inputLang,
-      targetLang: body.outputLang,
-      sourceText: body.inputText,
-    };
-
-    const result = await fetch(`${URL}/public`, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
-
-    const data = (await result.json()) as ITranslateResponse;
-
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.toString());
-    }
-  }
-}
-
-async function translateUserText(body: {
-  inputLang: string;
-  outputLang: string;
-  inputText: string;
-}) {
-  try {
-    const requestBody: ITranslateRequest = {
-      sourceLang: body.inputLang,
-      targetLang: body.outputLang,
-      sourceText: body.inputText,
-    };
-
-    const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
-
-    const result = await fetch(`${URL}/user`, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-
-    const data = (await result.json()) as ITranslateResponse;
-
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.toString());
-    }
-  }
-}
-
-async function getUserTranslations() {
-  try {
-    const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
-
-    const result = await fetch(`${URL}/user`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-
-    const data = (await result.json()) as ITranslateResult[];
-
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.toString());
-    }
-  }
-}
-
-async function deleteUserTranslation(item: {
-  requestId: string;
-  username: string;
-}) {
-  try {
-    const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
-
-    const result = await fetch(`${URL}/user`, {
-      method: "DELETE",
-      body: JSON.stringify(item),
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-
-    return (await result.json()) as ITranslateResult[];
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.toString());
-    }
-  }
-}
+import { useTranslation } from "./hooks/useTranslation";
 
 export default function Home() {
   const [inputText, setInputText] = useState<string>("");
   const [inputLang, setInputLang] = useState<string>("");
   const [outputLang, setOutputLang] = useState<string>("");
-  const [outputText, setOutputText] = useState<ITranslateResponse | null>(null);
-  const [translations, setTranslations] = useState<ITranslateResult[]>();
+
+  const {
+    translations,
+    isLoading,
+    isTranslating,
+    translate,
+    deleteTranslation,
+    isDeleting,
+  } = useTranslation();
+
+  if (isLoading) {
+    return <p>loading...</p>;
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center-safe p-24">
@@ -127,32 +28,11 @@ export default function Home() {
         onSubmit={async (e) => {
           e.preventDefault();
 
-          let result;
-          try {
-            const user = await getCurrentUser();
-
-            console.log(user);
-
-            if (user) {
-              result = await translateUserText({
-                inputLang,
-                inputText,
-                outputLang,
-              });
-            } else {
-              throw new Error("user is not logged in");
-            }
-          } catch {
-            result = await translatePublicText({
-              inputLang,
-              inputText,
-              outputLang,
-            });
-          }
-
-          if (result) {
-            setOutputText(result);
-          }
+          await translate({
+            sourceLang: inputLang,
+            sourceText: inputText,
+            targetLang: outputLang,
+          });
         }}>
         <div className="flex flex-col">
           <label htmlFor="inputText">Input text</label>
@@ -185,22 +65,10 @@ export default function Home() {
           />
         </div>
         <button className="btn bg-blue-200 p-2 mt-3 rounded-xl" type="submit">
-          Translate
+          {isTranslating ? "translating..." : "translate"}
         </button>
       </form>
-      {outputText && <pre>{JSON.stringify(outputText, null, 2)}</pre>}
-      <hr />
-      <button
-        className="btn bg-blue-200 p-2 mt-2 rounded-xl"
-        type="button"
-        onClick={async () => {
-          const data = await getUserTranslations();
-          if (data) {
-            setTranslations(data);
-          }
-        }}>
-        Get Translations
-      </button>
+
       <div className="flex flex-col w-full mt-3 space-y-2">
         {translations?.map((item) => (
           <div
@@ -217,15 +85,9 @@ export default function Home() {
               className="btn p-2 bg-red-500 hover:bg-red-300 cursor-pointer rounded-md"
               type="button"
               onClick={async () => {
-                const data = await deleteUserTranslation({
-                  requestId: item.requestId,
-                  username: item.username,
-                });
-                if (data) {
-                  setTranslations(data);
-                }
+                await deleteTranslation(item);
               }}>
-              X
+              {isDeleting ? "..." : "X"}
             </button>
           </div>
         ))}

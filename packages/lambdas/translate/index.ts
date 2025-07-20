@@ -109,13 +109,13 @@ export const userTranslate: lambda.APIGatewayProxyHandler = async function (
     const result: ITranslateResult = {
       ...request,
       ...response,
-      username: "",
+      username,
       requestId: nowEpoch.toString(),
     };
 
     await translationTable.insertTranslation(result);
 
-    return gateway.gatewaySuccessJsonResponse(response);
+    return gateway.gatewaySuccessJsonResponse(result);
   } catch (e: any) {
     return gateway.gatewayErrorJsonResponse(e);
   }
