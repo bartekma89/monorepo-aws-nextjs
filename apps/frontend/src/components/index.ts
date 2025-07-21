@@ -6,3 +6,4 @@ export { ConfirmationForm } from "./confirmation-form";
 export { AutoSignIn } from "./auto-signin";
 export { Logout } from "./logout";
 export { Provider } from "./rq-provider";
+export { TranslateForm } from "./translate-form";

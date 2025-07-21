@@ -1,14 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SignInOutput, SignUpOutput } from "aws-amplify/auth";
-import type {} from "aws-amplify/auth";
 
 import { RegisterForm, ConfirmationForm, AutoSignIn } from "@/components";
 import { useRouter } from "next/navigation";
-
-export type TSignUpState = SignUpOutput["nextStep"];
-export type TSignInState = SignInOutput["nextStep"];
+import { TSignInState, TSignUpState } from "@/lib/types";
 
 export default function RegisterPage() {
   const [step, setStep] = useState<TSignUpState | TSignInState | null>(null);
