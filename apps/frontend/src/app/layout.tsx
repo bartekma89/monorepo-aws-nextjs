@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navbar, AmplifyConfigure, Provider } from "@/components";
+import { Navbar, AmplifyConfigure, QueryProvider } from "@/components";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,10 +28,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AmplifyConfigure />
-        <Provider>
+        <QueryProvider>
           <Navbar />
           {children}
-        </Provider>
+        </QueryProvider>
       </body>
     </html>
   );

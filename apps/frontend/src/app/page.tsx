@@ -14,11 +14,10 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center-safe p-24">
       <TranslateForm />
-
       <div className="flex flex-col w-full mt-3 space-y-2">
         {translations?.map((item) => (
           <div
-            key={item.requestId}
+            key={item.timestamp}
             className="flex flex-row space-x-2 justify-between bg-slate-400">
             <p className="mr-6">
               {item.sourceLang}/{item.sourceText}

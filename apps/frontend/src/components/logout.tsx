@@ -1,20 +1,21 @@
 "use client";
 
-import { signOut } from "aws-amplify/auth";
+import { useUser } from "@/app/hooks";
 
-interface ILogoutProps {
-  onSignOut: () => void;
-}
+export function Logout() {
+  const { logout, user, isLoading } = useUser();
 
-export function Logout({ onSignOut }: ILogoutProps) {
+  if (user === null) {
+    return null;
+  }
+
   return (
     <button
-      className="btn bg-red-600"
+      className="btn bg-red-600 rounded-2xl text-white px-2 py-1 cursor-pointer"
       onClick={async () => {
-        await signOut();
-        onSignOut();
+        await logout();
       }}>
-      Logout
+      {isLoading ? "..." : "Logout"}
     </button>
   );
 }

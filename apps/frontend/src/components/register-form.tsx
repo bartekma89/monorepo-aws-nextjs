@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { SubmitHandler, useForm } from "react-hook-form";
 
-import { signUp } from "aws-amplify/auth";
 import { TRegisterFormProps, TSignUpState } from "@/lib/types";
+import { useUser } from "@/app/hooks";
 
 interface IRegisterFormProps {
   onStepChange: (value: TSignUpState) => void;
 }
 
 export function RegisterForm({ onStepChange }: IRegisterFormProps) {
-  const [errorApi, setErrorApi] = useState<string>();
+  const { registerUser, errorApi } = useUser();
 
   const {
     register,
@@ -26,31 +25,10 @@ export function RegisterForm({ onStepChange }: IRegisterFormProps) {
   ) => {
     event?.preventDefault();
 
-    try {
-      if (password !== password2) {
-        throw new Error("Passwords do not match");
-      }
+    const nextStep = await registerUser({ email, password, password2 });
 
-      const { nextStep } = await signUp({
-        username: email,
-        password,
-        options: {
-          userAttributes: {
-            email,
-          },
-          autoSignIn: true,
-        },
-      });
-
+    if (nextStep) {
       onStepChange(nextStep);
-    } catch (error: unknown) {
-      console.error("Error signing up:", error);
-
-      if (error instanceof Error) {
-        setErrorApi(error.message);
-      } else {
-        setErrorApi(String(error));
-      }
     }
   };
 

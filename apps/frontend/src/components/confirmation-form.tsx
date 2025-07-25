@@ -1,8 +1,7 @@
 "use client";
 
+import { useUser } from "@/app/hooks";
 import { TConfirmationFormProps, TSignUpState } from "@/lib/types";
-import { confirmSignUp } from "aws-amplify/auth";
-import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
 interface IConfirmationFormProps {
@@ -10,8 +9,7 @@ interface IConfirmationFormProps {
 }
 
 export function ConfirmationForm({ onStepChange }: IConfirmationFormProps) {
-  const [errorApi, setErrorApi] = useState<string>();
-
+  const { confirmUser, errorApi } = useUser();
   const {
     register,
     handleSubmit,
@@ -24,21 +22,10 @@ export function ConfirmationForm({ onStepChange }: IConfirmationFormProps) {
   ) => {
     event?.preventDefault();
 
-    try {
-      const data = await confirmSignUp({
-        username: email,
-        confirmationCode,
-      });
+    const nextStep = await confirmUser({ confirmationCode, email });
 
-      onStepChange(data.nextStep);
-    } catch (error) {
-      console.error("Error confirming sign up:", error);
-
-      if (error instanceof Error) {
-        setErrorApi(error.message);
-      } else {
-        setErrorApi(String(error));
-      }
+    if (nextStep) {
+      onStepChange(nextStep);
     }
   };
 

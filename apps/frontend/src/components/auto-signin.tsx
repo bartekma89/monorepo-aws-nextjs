@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { autoSignIn } from "aws-amplify/auth";
-import { TSignInState } from "@/app/register/page";
+import { TSignInState } from "@/lib/types";
+import { useUser } from "@/app/hooks";
 
 interface IAutoSignInProps {
   onStepChange: (value: TSignInState) => void;
 }
 
 export function AutoSignIn({ onStepChange }: IAutoSignInProps) {
-  useEffect(() => {
-    const asyncSignIn = async () => {
-      const { nextStep } = await autoSignIn();
+  const { autoSignInUser } = useUser();
 
-      onStepChange(nextStep);
-    };
-    asyncSignIn();
+  useEffect(() => {
+    autoSignInUser().then((nextStep) => {
+      if (nextStep) {
+        onStepChange(nextStep);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
