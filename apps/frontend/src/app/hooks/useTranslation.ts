@@ -1,36 +1,18 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AuthUser, getCurrentUser } from "aws-amplify/auth";
-import { useCallback, useEffect, useState } from "react";
 import { translateApi } from "@/lib";
 import { ITranslatePrimaryKey, ITranslateRequest } from "@sff/shared-types";
+import { useUser } from "./useUser";
 
 export const useTranslation = () => {
-  const [user, setUser] = useState<AuthUser | null | undefined>(undefined);
+  const { user } = useUser();
   const queryKey = ["translate", user ? user.userId : ""];
   const queryClient = useQueryClient();
-
-  const setCurrentUser = useCallback(async () => {
-    try {
-      const currUser = await getCurrentUser();
-
-      setUser(currUser);
-    } catch {
-      setUser(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    setCurrentUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const getUserTranslationsQuery = useQuery({
     queryKey,
     queryFn: () => {
-      console.log("getUserTranslationsQuery");
-
       if (!user) {
         return [];
       }

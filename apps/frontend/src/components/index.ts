@@ -5,5 +5,6 @@ export { LoginForm } from "./login-form";
 export { ConfirmationForm } from "./confirmation-form";
 export { AutoSignIn } from "./auto-signin";
 export { Logout } from "./logout";
-export { Provider } from "./rq-provider";
+export { QueryProvider } from "./rq-provider";
 export { TranslateForm } from "./translate-form";
+export { AppProvider } from "./app-provider";

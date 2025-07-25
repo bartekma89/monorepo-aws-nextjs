@@ -38,6 +38,10 @@ export async function translateUserText(request: ITranslateRequest) {
       },
     });
 
+    if (!result.ok) {
+      throw new Error(result.toString());
+    }
+
     const data = (await result.json()) as ITranslateResult;
 
     return data;

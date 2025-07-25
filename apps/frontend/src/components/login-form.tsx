@@ -1,17 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { signIn } from "aws-amplify/auth";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { TLoginFormProps } from "@/lib/types";
+import { useUser } from "@/app/hooks";
 
-interface ILoginFormProps {
-  onSignIn: () => void;
-}
-
-export function LoginForm({ onSignIn }: ILoginFormProps) {
-  const [errorApi, setErrorApi] = useState<string>();
+export function LoginForm() {
+  const { errorApi, isLoading, login, user } = useUser();
 
   const {
     register,
@@ -25,26 +20,16 @@ export function LoginForm({ onSignIn }: ILoginFormProps) {
   ) => {
     event?.preventDefault();
 
-    try {
-      await signIn({
-        username: email,
-        password,
-        options: {
-          clientMetadata: {
-            email,
-          },
-        },
-      });
-
-      onSignIn();
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorApi(error.message);
-      } else {
-        setErrorApi(String(error));
-      }
-    }
+    await login({ email, password });
   };
+
+  if (user === undefined) {
+    return <div>loading...</div>;
+  }
+
+  if (user) {
+    return <pre>{JSON.stringify(user, null, 2)}</pre>;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -68,7 +53,7 @@ export function LoginForm({ onSignIn }: ILoginFormProps) {
       </div>
       <div>
         <button className="block btn bg-blue-200 p-2 mt-2 rounded-xl mb-2">
-          Login
+          {isLoading ? "..." : "Login"}
         </button>
         <Link href="/register">Register</Link>
       </div>

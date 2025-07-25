@@ -2,13 +2,18 @@
 
 import { ReactNode, useState } from "react";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { AppProvider } from "@/components";
 
 interface IProviderProps {
   children: ReactNode;
 }
 
-export const Provider = ({ children }: IProviderProps) => {
+export const QueryProvider = ({ children }: IProviderProps) => {
   const [client] = useState(() => new QueryClient());
 
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <AppProvider>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    </AppProvider>
+  );
 };
